@@ -2,7 +2,9 @@ CREATE TABLE Portfelj (
     ID SERIAL PRIMARY KEY,           -- Primarni ključ, samodejno se generira, vsaka vrednost mora biti edinstvena
     opis VARCHAR(1000) DEFAULT 'Brez opisa',              -- Besedilni stolpec, omejen na 1000 znakov, lahko je prazen
     Datum_nastanka TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, -- Samodejno nastavi datum in čas vnosa, ne sme biti prazen
-	Sredstva NUMERIC(10,2) DEFAULT 0 NOT NULL -- sredstva na voljo za kupovanje
+    ID_uporabnika INT NOT NULL,                                     -- Povezava do podatkov o uporabnikov
+	Sredstva NUMERIC(10,2) DEFAULT 0 NOT NULL, -- sredstva na voljo za kupovanje
+    CONSTRAINT Identifikacija_uporabnika FOREIGN KEY (ID_uporabnika) REFERENCES Uporabnik(ID)
 	);
 
 CREATE TABLE Vrednostni_papirji (
@@ -16,9 +18,7 @@ CREATE TABLE Vrednostni_papirji (
 CREATE TABLE Uporabnik (
     ID SERIAL PRIMARY KEY,            -- Primarni ključ, samodejno se generira
     ime VARCHAR(50) NOT NULL,         -- Besedilni stolpec, omejen na 50 znakov, ne sme biti prazen
-    ID_portfelja INT NOT NULL,        -- Številčni stolpec, ne sme biti prazen
-	Sredstva NUMERIC(10,2) DEFAULT 10000, -- Začetna vsota sredstev, ki jih lahko razporedi med svoje portfelje
-    CONSTRAINT ID_Portfelja_od_uporabnika FOREIGN KEY (ID_portfelja) REFERENCES Portfelj(ID)  -- Zunanji ključ, ki se nanaša na 'ID' v tabeli 'Portfelj'
+	Sredstva NUMERIC(10,2) DEFAULT 10000 -- Začetna vsota sredstev, ki jih lahko razporedi med svoje portfelje
 );
 
 
