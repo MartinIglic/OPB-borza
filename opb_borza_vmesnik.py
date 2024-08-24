@@ -1,5 +1,6 @@
 from bottle import route, run, static_file, template, request, response, redirect
 from opb_borza_model import vlagatelj
+from opb_borza_model import *
 import opb_borza_model
 import psycopg2
 
@@ -39,7 +40,7 @@ def nov_uporabnik():
 
                 
                 oseba = vlagatelj(uporabnik, geslo)
-                
+                main(danasnji_dan())    
                 response.set_cookie('user', uporabnik)
                 return template('portfelj.html', ime_uporabnika=oseba.ime, podatki_uporabnika=oseba.trenutni_portfelj(),
                             transakcije=oseba.transakcije(), rezultat='Uporabnik uspešno kreiran.',
@@ -67,6 +68,7 @@ def logiranje():
         else:
             response.set_cookie('user', uporabnik)
             oseba = vlagatelj(uporabnik, geslo)
+            main(danasnji_dan())    
             return template('portfelj.html', ime_uporabnika=oseba.ime, podatki_uporabnika=oseba.trenutni_portfelj(),
                             transakcije=oseba.transakcije(), rezultat='',
                             donosnost=oseba.donosnost(), stanje=oseba.stanje())
