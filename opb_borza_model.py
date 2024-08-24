@@ -133,7 +133,7 @@ def save_data_to_database(data, date):
 
 def main(selected_date):
     start_date = get_latest_date()
-    end_date = datetime.strptime(selected_date, '%d.%m.%Y')
+    end_date = datetime.strptime(str(selected_date), '%Y-%m-%d')
     
     date_range = get_date_range(start_date, end_date)
     
