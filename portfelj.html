@@ -1,0 +1,167 @@
+
+<html>
+   <head>
+    <meta charset="utf-8">
+   </head>
+   <style>
+     .prodajaTrue {
+       background-color: green;
+     }
+     .prodajaFalse {
+       background-color: red;
+     }
+   </style>
+   <body style="font: 16px Roboto, sans-serif;">
+    <form method= 'post' action="/odjava">
+      <p style="text-align: right"><button style="background-color: red;" >
+        Odjavi se
+      </button></p>
+    </form>
+      <h1>Moj portfelj</h1>
+      <p style="color: red"><b>{{rezultat}}</b></p>
+      <h2>Vnos novega posla</h2>
+      <form  method="post" action="/vnos">
+        <table>
+          <tr>
+            <td>
+              <label>Oznaka vrednostnega papirja</label> 	
+            </td>
+            <td>
+              <select name="simbol">
+                <option value="CICG">Cinkarna Celje</option>
+                <option value="IEKG" >Intereuropa</option>
+                <option value="KRKG" >Krka</option>
+                <option value="LKPG" >Luka Koper</option>
+                <option value="MELR" >Mercator</option>
+                <option value="NLBR" >NLB</option>
+                <option value="PETG" >Petrol</option>
+                <option value="POSR" >Pozavarovalnica Sava</option>
+                <option value="TLSG" >Telekom Slovenije</option>
+                <option value="ZVTG" >Zavarovalnica Triglav</option>
+                <option value="CETG" >Cetis</option>
+                <option value="DATG" >Datalab tehnologije</option>
+                <option value="DPRG" >Delo prodaja</option>
+                <option value="GHUR" >Union Hotels Collection</option>
+                <option value="KDHR" >KD Group</option>
+                <option value="KSFR" >KS Naložbe</option>
+                <option value="MKOG" >Melamin</option>
+                <option value="MTSG" >Kompas MTS</option>
+                <option value="NALN" >Nama</option>
+                <option value="NIKN" >Nika</option>
+                <option value="PPDT" >Prva Group</option>
+                <option value="SALR" >Salus</option>
+                <option value="SKDR" >KD</option>
+                <option value="TCRG" >Terme Čatež</option>
+                <option value="UKIG" >Unior</option>
+                <option value="VHDR" >Vipa Holding</option>
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              Vrsta posla
+            </td>
+            <td>
+              <input type="radio" name="vrsta_posla" value="nakup" checked> nakup<br>
+              <input type="radio" name="vrsta_posla" value="prodaja"> prodaja
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <label>Količina vrednostnega papirja</label> 	
+            </td>
+            <td>
+              <input type="text" name="kolicina">
+            </td>
+          </tr>
+          <tr>
+            <td>
+               <label>Datum posla (format d.m.l)</label> 	
+            </td>
+            <td>
+               <input type="text" name="datum">
+            </td>
+          </tr>
+           <tr>
+            <td>
+            </td>
+            <td>
+               <button>Vnesi posel</button>
+            </td>
+          </tr>
+        </table>
+      </form>
+
+
+      <h1>Pozdravljeni {{ime_uporabnika}}</h1>
+      <h2>Moj portfelj</h2>
+      <table>
+         <tr>
+            <td colspan=2 align=center><b>Vrednost mojega portfelja</b></td>
+         </tr>
+         <tr>
+            <td>Vrednost na<br>današnji dan</td>
+            <td>
+              {{stanje}}
+            </td>
+         </tr>
+         <tr>
+            <td>Donosnost</td>
+            <td>
+              {{donosnost}} %
+              
+
+            </td>
+         </tr>
+
+         <tr>
+            <td colspan=2 align=center><br><b>Vrednostni papirji, ki jih imam trenutno v lasti</b></td>
+         </tr>
+            <td colspan=2>
+              <table>
+                <tr>
+                  <td><b>Vred. papir</b></td>
+                  <td><b>Število vp</b></td>
+                  <td><b>Vrednost vp</b></td>
+                </tr>
+                
+                %for row in podatki_uporabnika:
+                <tr>
+                  <td>{{row[0]}}</td>
+                  <td>{{row[1]}}</td>
+                  <td>{{row[2]}}</td>
+                </tr>
+                %end
+              </table>
+            </td>
+         </tr>
+      </table>
+      
+      <table>
+         <tr>
+            <td colspan=2 align=center><br><b>Seznam vseh mojih transakcij</b></td>
+         </tr>
+            <td colspan=2>
+              <table>
+                <tr>
+                  <td><b>Datum</b></td>
+                  <td><b>Vred. papir</b></td>
+                  <td><b>Število</b></td>
+                  <td><b>Cena</b></td>
+                  <td><b>Vrednost</b></td>
+                </tr>
+                %for transakcija in transakcije:
+                <tr class='prodaja{{transakcija[2] < 0}}'>
+                  <td>{{transakcija[0]}}</td>
+                  <td>{{transakcija[1]}}</td>
+                  <td>{{transakcija[2]}}</td>
+                  <td>{{transakcija[3]}}</td>
+                  <td>{{transakcija[4]}}</td>
+                </tr>
+                %end
+              </table>
+            </td>
+         </tr>
+      </table>
+   </body>
+</html>
