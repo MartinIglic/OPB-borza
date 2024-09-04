@@ -1,0 +1,8 @@
+bottle
+psycopg2
+
+dataclasses-json
+pandas
+datetime
+python-dotenv
+
