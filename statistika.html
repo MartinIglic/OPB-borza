@@ -1,4 +1,3 @@
-
 <html lang="en">
    <head>
     <meta charset="utf-8">
@@ -48,8 +47,8 @@
         }
 
         /* Button specific styles */
-        .btn-statistika {
-            background-color: rgb(90, 90, 225); /* Blue background */
+        .btn-portfelj {
+            background-color: rgb(16, 243, 84); 
         }
 
         .btn-odjava {
@@ -64,28 +63,28 @@
      }
     </style>
    </head>
-   
-
-   <body> 
+   <body>
     <header>
-        <h1>Moj Portfelj</h1>
-        <div class="btn-group">
-            <form method="post" action="/statistika">
-                <button type="submit" class="btn-statistika">Statistika</button>
-            </form>
-            <form method="post" action="/odjava">
-                <button type="submit" class="btn-odjava">Odjavi se</button>
-            </form>
-        </div>
+     <h1>Statistika</h1>
+     <div class="btn-group">
+         <form method="post" action="/portfelj">
+             <button type="submit" class="btn-portfelj">Portfelj</button>
+         </form>
+         <form method="post" action="/odjava">
+             <button type="submit" class="btn-odjava">Odjavi se</button>
+         </form>
+     </div>
     </header>
+    <h2>Tukaj lahko preučite gibanje cen posameznega vrednostnega papirja</h2>
     
-      <p style="color: red"><b>{{rezultat}}</b></p>
-      <h2>Vnos novega posla</h2>
-      <form  method="post" action="/vnos">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
+<body>
+
+<form  method="post" action="/poizvedba">
         <table>
           <tr>
             <td>
-              <label>Oznaka vrednostnega papirja</label> 	
+              <label>izberite vrednosti papir</label> 	
             </td>
             <td>
               <select name="simbol">
@@ -120,109 +119,67 @@
           </tr>
           <tr>
             <td>
-              Vrsta posla
+              Natančnost
             </td>
             <td>
-              <input type="radio" name="vrsta_posla" value="nakup" checked> nakup<br>
-              <input type="radio" name="vrsta_posla" value="prodaja"> prodaja
+              <input type="radio" name="natancnost" value="dnevno" checked> dnevno<br>
+              <input type="radio" name="natancnost" value="tedensko"> tedensko<br>
+              <input type="radio" name="natancnost" value="mesecno"> mesečno
             </td>
           </tr>
           <tr>
             <td>
-              <label>Količina vrednostnega papirja</label> 	
+              <label>Obdobje (format d.m.l). OD:</label> 	
             </td>
             <td>
-              <input type="text" name="kolicina">
+              <input type="text" name="zacetek">
+            </td>
+          
+          
+            <td>
+               <label> DO:</label> 	
+            </td>
+            <td>
+               <input type="text" name="konec">
             </td>
           </tr>
-          <tr>
-            <td>
-               <label>Datum posla (format d.m.l)</label> 	
-            </td>
-            <td>
-               <input type="text" name="datum">
-            </td>
-          </tr>
+           
            <tr>
             <td>
-            </td>
-            <td>
-               <button>Vnesi posel</button>
+               <button>Pokaži graf</button>
             </td>
           </tr>
         </table>
       </form>
 
+<canvas id="myChart" style="width:100%;max-width:600px"></canvas>
 
-      <h1>Pozdravljeni {{ime_uporabnika}}</h1>
-      <h2>Moj portfelj</h2>
-      <table>
-         <tr>
-            <td colspan=2 align=center><b>Vrednost mojega portfelja</b></td>
-         </tr>
-         <tr>
-            <td>Vrednost na<br>današnji dan</td>
-            <td>
-              {{stanje}}
-            </td>
-         </tr>
-         <tr>
-            <td>Donosnost</td>
-            <td>
-              {{donosnost}} %
-              
 
-            </td>
-         </tr>
+<script>
+const xValues = podatki_cas;
+const yValues = podatki_vrednost;
 
-         <tr>
-            <td colspan=2 align=center><br><b>Vrednostni papirji, ki jih imam trenutno v lasti</b></td>
-         </tr>
-            <td colspan=2>
-              <table>
-                <tr>
-                  <td><b>Vred. papir</b></td>
-                  <td><b>Število vp</b></td>
-                  <td><b>Vrednost vp</b></td>
-                </tr>
-                
-                %for row in podatki_uporabnika:
-                <tr>
-                  <td>{{row[0]}}</td>
-                  <td>{{row[1]}}</td>
-                  <td>{{row[2]}}</td>
-                </tr>
-                %end
-              </table>
-            </td>
-         </tr>
-      </table>
-      
-      <table>
-         <tr>
-            <td colspan=2 align=center><br><b>Seznam vseh mojih transakcij</b></td>
-         </tr>
-            <td colspan=2>
-              <table>
-                <tr>
-                  <td><b>Datum</b></td>
-                  <td><b>Vred. papir</b></td>
-                  <td><b>Število</b></td>
-                  <td><b>Cena</b></td>
-                  <td><b>Vrednost</b></td>
-                </tr>
-                %for transakcija in transakcije:
-                <tr class='prodaja{{transakcija[2] < 0}}'>
-                  <td>{{transakcija[0]}}</td>
-                  <td>{{transakcija[1]}}</td>
-                  <td>{{transakcija[2]}}</td>
-                  <td>{{transakcija[3]}}</td>
-                  <td>{{transakcija[4]}}</td>
-                </tr>
-                %end
-              </table>
-            </td>
-         </tr>
-      </table>
+new Chart("myChart", {
+  type: "line",
+  data: {
+    labels: xValues,
+    datasets: [{
+      fill: false,
+      lineTension: 0.3,
+      backgroundColor: "rgba(0,0,255,1.0)",
+      borderColor: "rgba(0,0,255,0.1)",
+      data: yValues
+    }]
+  },
+  options: {
+    legend: {display: false},
+    scales: {
+      yAxes: [{ticks: {min: minimum, max: maksimunm}}],
+    }
+  }
+});
+</script>
+
+
    </body>
 </html>

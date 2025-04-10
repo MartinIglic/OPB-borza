@@ -144,6 +144,82 @@ def main(selected_date):
             if data:
                 save_data_to_database(data, date_str)
 
+
+def dodaj_vrednosti(oznaka):
+    conn = create_connection()
+    if conn is None:
+        print("Povezava ni bila uspešno vzpostavljena.")
+    else:
+        try:
+            cursor = conn.cursor()
+            cursor.execute('''SELECT "datum", "vrednost" FROM "public"."vrednosti_od_papirjev" WHERE "oznaka" = %s''', (oznaka,))
+            result = cursor.fetchall()
+            print(result)
+        except Exception as e:
+            print(f"Napaka pri izvajanju poizvedbe: {e}")
+            conn.rollback()
+        finally:
+            cursor.close()
+            conn.close()
+    return result
+
+
+def pretvori_rezultat_v_seznama(rezultat):
+    datumi = []
+    vrednosti = []
+
+    # Pretvori rezultat v dva ločena seznama
+    for datum, vrednost in rezultat:
+        formatiran_datum = datum.strftime('%Y-%m-%d')
+        datumi.append(formatiran_datum)
+        vrednosti.append(float(vrednost))  
+
+    return datumi, vrednosti
+
+
+
+def ustvari_obdobje(zacetek, konec, datumi, vrednosti):
+    ustrezni_datumi = []
+    ustrezne_vrednosti = []
+    
+    # Pretvori začetni in končni datum v datetime objekte
+    zacetek = datetime.strptime(zacetek, "%d.%m.%Y")  # Popravljeno na %Y
+    konec = datetime.strptime(konec, "%d.%m.%Y")  # Popravljeno na %Y
+    
+    # Pretvori vse datume v seznamu v datetime objekte
+    datumi_objekti = [datetime.strptime(datum, "%Y-%m-%d") for datum in datumi]  # Popravljeno na %Y
+    
+    # Preveri, če dolžina seznamov datumi in vrednosti ustreza
+    if len(datumi_objekti) != len(vrednosti):
+        raise ValueError("Seznami datumi in vrednosti morajo biti enake dolžine")
+    
+    # Filtriraj ustrezne datume in vrednosti
+    for datum, vrednost in zip(datumi_objekti, vrednosti):
+        if zacetek <= datum <= konec:
+            ustrezni_datumi.append(datum.strftime("%Y-%m-%d"))
+            ustrezne_vrednosti.append(vrednost)
+    
+    return ustrezni_datumi, ustrezne_vrednosti
+
+def doloci_frekvenco_podatkov(natancnost, datumi, vrednosti):
+    koncni_datumi = []
+    koncne_vrednosti = []
+    if natancnost == 'mesecno':
+        for i in range(len(datumi)):
+            if i % 22 == 0:
+                koncni_datumi.append(datumi[i])
+                koncne_vrednosti.append(vrednosti[i])
+        return koncni_datumi, koncne_vrednosti
+    elif natancnost == 'tedensko':
+        for i in range(len(datumi)):
+            if i % 5 == 0:
+                koncni_datumi.append(datumi[i])
+                koncne_vrednosti.append(vrednosti[i])
+        return koncni_datumi, koncne_vrednosti
+    else:
+        return datumi, vrednosti
+
+
 class vlagatelj:
 
     def __init__(self, ime=None, geslo=None):
@@ -347,6 +423,12 @@ class vlagatelj:
             return 0.0
         return donosnost
     
+
+
+
+
+
+    
 def povprecje(datoteka):
     povprecje = 0
     skupna_donosnost = 0
@@ -356,5 +438,14 @@ def povprecje(datoteka):
         osebe += 1
     return round((skupna_donosnost / osebe),2)
 
+
+
+
+
+
+
+
 #metka = vlagatelj("metka1", "123", 10000)
 #metka.trenutni_portfelj()
+
+

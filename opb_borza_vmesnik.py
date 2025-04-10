@@ -124,5 +124,40 @@ def odjava():
     return template('index_db_borza.html', rezultat='Odjava je uspela')
 
 
+@route('/statistika', method='POST')
+def statistika():
+    datum = request.forms.get('datum')
+    oseba_cookie = request.cookies.get('user')
+
+    oseba = vlagatelj(oseba_cookie, None)
+
+    return template('statistika.html')
+
+@route('/poizvedba', method='POST')
+def statistika():
+    simbol = request.forms.get('simbol')
+    natancnost = request.forms.get('natancnost')
+    zacetek = request.forms.get('zacetek')
+    konec = request.forms.get('konec')
+    datumi, vrednosti = pretvori_rezultat_v_seznama(dodaj_vrednosti(simbol))
+    casi, cene = ustvari_obdobje(zacetek, konec, datumi, vrednosti)
+    podatki_datumi, podatki_cene = doloci_frekvenco_podatkov(natancnost, casi, cene)
+    spodnja_meja = min(podatki_cene)
+    zgornja_meja = max(podatki_cene)
+    return template('statistika.html', podatki_cas=podatki_datumi, podatki_vrednost=podatki_cene,
+                    minimum=0.9*spodnja_meja, maksimum=1.1*zgornja_meja)
+
+
+@route('/portfelj', method='POST')
+def portfelj():
+    datum = request.forms.get('datum')
+    oseba_cookie = request.cookies.get('user')
+    rezultat = 'Dobrodošli nazaj na portfelj!'
+    oseba = vlagatelj(oseba_cookie, None)
+    return template('portfelj.html', ime_uporabnika=oseba.ime, podatki_uporabnika=oseba.trenutni_portfelj(),
+                            transakcije=oseba.transakcije(), rezultat=rezultat,
+                            donosnost=oseba.donosnost(), stanje=oseba.stanje())
+
+
 
 run(host='localhost', port=8080, debug=True)
