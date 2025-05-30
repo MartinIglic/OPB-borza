@@ -2,20 +2,30 @@
 
 import urllib.request, json
 from datetime import datetime, timedelta
+import psycopg2, psycopg2.extensions, psycopg2.extras
+psycopg2.extensions.register_type(psycopg2.extensions.UNICODE) # se znebimo problemov s šumniki
+import auth_public as auth
 import sys
 import time
 import sqlite3
 import psycopg2, psycopg2.extensions, psycopg2.extras
 from psycopg2 import sql, Error
+import os
+
+
+# Preberemo port za bazo iz okoljskih spremenljivk
+DB_PORT = os.environ.get('POSTGRES_PORT', 5432)
 
 def create_connection():
     try:
+
         connection = psycopg2.connect(
-            user='rokl',
-            password='skn6t66w',
-            host='baza.fmf.uni-lj.si', 
-            #port='8080',       
-            database='sem2024_rokl'
+
+            database=auth.db, 
+            host=auth.host, 
+            user=auth.user, 
+            password=auth.password, 
+            port=DB_PORT
         )
         return connection
     except Error as e:
@@ -112,6 +122,7 @@ def date_exists_in_database(date):
     result = cursor.fetchone()
     conn.close()
     return result is not None
+
 def save_data_to_database(data, date):
     conn = create_connection()
     if conn is None:
@@ -222,9 +233,11 @@ def doloci_frekvenco_podatkov(natancnost, datumi, vrednosti):
 
 class vlagatelj:
 
-    def __init__(self, ime=None, geslo=None):
+    def __init__(self, ime=None, geslo=None, rola=None):
             self.ime = ime
             self.geslo = geslo
+            #self.rola = 
+
             
     def shrani_uporabnika(self):
         conn = create_connection()

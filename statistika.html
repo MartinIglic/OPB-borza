@@ -146,7 +146,7 @@
            
            <tr>
             <td>
-               <button>Pokaži graf</button>
+               <button type="submit">Pokaži graf</button>
             </td>
           </tr>
         </table>
@@ -154,32 +154,40 @@
 
 <canvas id="myChart" style="width:100%;max-width:600px"></canvas>
 
-
+<!-- Vstavi podatke iz Python predloge kot veljavne JS spremenljivke -->
 <script>
-const xValues = podatki_cas;
-const yValues = podatki_vrednost;
-
-new Chart("myChart", {
-  type: "line",
-  data: {
-    labels: xValues,
-    datasets: [{
-      fill: false,
-      lineTension: 0.3,
-      backgroundColor: "rgba(0,0,255,1.0)",
-      borderColor: "rgba(0,0,255,0.1)",
-      data: yValues
-    }]
-  },
-  options: {
-    legend: {display: false},
-    scales: {
-      yAxes: [{ticks: {min: minimum, max: maksimunm}}],
-    }
-  }
-});
+  const xValues = {{!podatki_cas}};
+  const yValues = {{!podatki_vrednost}};
+  const minimum = {{minimum}};
+  const maksimunm = {{maximum}};
 </script>
 
+<script>
+  new Chart("myChart", {
+    type: "line",
+    data: {
+      labels: xValues,
+      datasets: [{
+        fill: false,
+        lineTension: 0.3,
+        backgroundColor: "rgba(0,0,255,1.0)",
+        borderColor: "rgba(0,0,255,0.1)",
+        data: yValues
+      }]
+    },
+    options: {
+      legend: { display: false },
+      scales: {
+        yAxes: [{
+          ticks: {
+            min: minimum,
+            max: maksimunm
+          }
+        }]
+      }
+    }
+  });
+</script>
 
-   </body>
+</body>
 </html>

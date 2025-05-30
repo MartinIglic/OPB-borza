@@ -4,13 +4,17 @@ from opb_borza_model import *
 import opb_borza_model
 import psycopg2
 
+import psycopg2, psycopg2.extensions, psycopg2.extras
+psycopg2.extensions.register_type(psycopg2.extensions.UNICODE) # se znebimo problemov s šumniki
+import auth_public as auth
+
 # Database connection details
 connection = psycopg2.connect(
-    user='rokl',
-    password='skn6t66w',
-    host='baza.fmf.uni-lj.si',
-    #port='8080',
-    database='sem2024_rokl'
+    database=auth.db, 
+    host=auth.host, 
+    user=auth.user, 
+    password=auth.password, 
+    port=DB_PORT
 )
 
 
@@ -131,7 +135,11 @@ def statistika():
 
     oseba = vlagatelj(oseba_cookie, None)
 
-    return template('statistika.html')
+    return template('statistika.html',
+                    podatki_cas=[],
+                    podatki_vrednost=[],
+                    minimum=0,
+                    maximum=100)
 
 @route('/poizvedba', method='POST')
 def statistika():
@@ -145,7 +153,7 @@ def statistika():
     spodnja_meja = min(podatki_cene)
     zgornja_meja = max(podatki_cene)
     return template('statistika.html', podatki_cas=podatki_datumi, podatki_vrednost=podatki_cene,
-                    minimum=0.9*spodnja_meja, maksimum=1.1*zgornja_meja)
+                    minimum=0.9*spodnja_meja, maximum=1.1*zgornja_meja)
 
 
 @route('/portfelj', method='POST')
