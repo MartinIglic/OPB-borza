@@ -1,21 +1,41 @@
 ###MODEL
 
 import urllib.request, json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import psycopg2, psycopg2.extensions, psycopg2.extras
 psycopg2.extensions.register_type(psycopg2.extensions.UNICODE) # se znebimo problemov s šumniki
 import auth_public as auth
 import sys
+import bcrypt
 import time
 import sqlite3
 import psycopg2, psycopg2.extensions, psycopg2.extras
 from psycopg2 import sql, Error
 import os
 
+# UVOZ VSEH PAKETOV, KI JIH POTREBUJEMO
+
+
+# SLOVAR ZA PRETVORBO IZ KRATIC V IMENA PODJETIJ
+
+IMENA_PODJETIJ = {
+    "CICG": "Cinkarna Celje", "IEKG": "Intereuropa", "KRKG": "Krka", "LKPG": "Luka Koper",
+    "MELR": "Mercator", "NLBR": "NLB", "PETG": "Petrol", "POSR": "Pozavarovalnica Sava",
+    "TLSG": "Telekom Slovenije", "ZVTG": "Zavarovalnica Triglav", "CETG": "Cetis",
+    "DATG": "Datalab tehnologije", "DPRG": "Delo prodaja", "GHUR": "Union Hotels Collection",
+    "KDHR": "KD Group", "KSFR": "KS Naložbe", "MKOG": "Melamin", "MTSG": "Kompas MTS",
+    "NALN": "Nama", "NIKN": "Nika", "PPDT": "Prva Group", "SALR": "Salus", "SKDR": "KD",
+    "TCRG": "Terme Čatež", "UKIG": "Unior", "VHDR": "Vipa Holding"
+}
+
+
 
 # Preberemo port za bazo iz okoljskih spremenljivk
 DB_PORT = os.environ.get('POSTGRES_PORT', 5432)
 
+
+
+# Funkcija za ustvarjanje povezave z bazo
 def create_connection():
     try:
 
@@ -156,79 +176,154 @@ def main(selected_date):
                 save_data_to_database(data, date_str)
 
 
-def dodaj_vrednosti(oznaka):
+#ZA STRAN STATITSTIKO PRIDOBI PODATKE GLEDE NA ČASOVNO OBDOBJE IN NATANČNOST
+
+def poizvej_podatke(simbol, natancnost, zacetek, konec):
     conn = create_connection()
-    if conn is None:
-        print("Povezava ni bila uspešno vzpostavljena.")
-    else:
-        try:
-            cursor = conn.cursor()
-            cursor.execute('''SELECT "datum", "vrednost" FROM "public"."vrednosti_od_papirjev" WHERE "oznaka" = %s''', (oznaka,))
-            result = cursor.fetchall()
-            print(result)
-        except Exception as e:
-            print(f"Napaka pri izvajanju poizvedbe: {e}")
-            conn.rollback()
-        finally:
-            cursor.close()
-            conn.close()
-    return result
+    cursor = conn.cursor()
+
+    if natancnost == 'tedensko':#IZBERE TEDENSKI IZBOR, PRI DATUMU DODA KRATICO -T, DA POUDARI ZA KATERI TEDEN GRE
+        group_field = "EXTRACT(YEAR FROM datum) || '-T' || TO_CHAR(datum, 'IW')"
+    elif natancnost == 'mesecno':#IZBERE MESEČNI IZBOR, PRI DATUMU DODA KRATICO -M, DA POUDARI ZA KATERI MESEC GRE
+        group_field = "EXTRACT(YEAR FROM datum) || '-M' || TO_CHAR(datum, 'MM')"
+    else:#NAREDI POIZVEDBO PO DNEVIH
+        cursor.execute(f"""
+        SELECT
+            datum AS obdobje,
+            vrednost AS vrednosti
+        FROM vrednosti_od_papirjev
+        WHERE oznaka = %s
+          AND datum BETWEEN %s AND %s
+        ORDER BY 1;
+        """, (simbol, zacetek, konec))
+        rezultati = cursor.fetchall()
+        conn.close()
+
+        obdobja = [r[0].strftime("%Y-%m-%d") for r in rezultati]
+        vrednosti = [float(r[1]) for r in rezultati]
+        return obdobja, vrednosti
+    
+    # NAREDI POIZVEDBO PO TEDNIH ALI MESECIH, TER POIŠČE POVPREČJE TSITEGA MESECA ALI TEDNA
+    query = f""" 
+        SELECT
+            {group_field} AS obdobje,
+            ROUND(AVG(vrednost), 2) AS vrednosti
+        FROM vrednosti_od_papirjev
+        WHERE oznaka = %s
+          AND datum BETWEEN %s AND %s
+        GROUP BY 1
+        ORDER BY 1;
+    """
+
+    cursor.execute(query, (simbol, zacetek, konec))
+    rezultati = cursor.fetchall()
+    conn.close()
+
+    obdobja = [r[0] for r in rezultati]
+    vrednosti = [float(r[1]) for r in rezultati]
+    return obdobja, vrednosti
 
 
-def pretvori_rezultat_v_seznama(rezultat):
-    datumi = []
-    vrednosti = []
+def portfelj_po_dnevih(uporabnik):
+    """
+    Vrne datume in vrednosti portfelja uporabnika po dnevih.
+    Vrednost se izračuna kot vsota (kolicina * cena papirja na dan)
+    """
+    conn = create_connection()
+    cursor = conn.cursor()
 
-    # Pretvori rezultat v dva ločena seznama
-    for datum, vrednost in rezultat:
-        formatiran_datum = datum.strftime('%Y-%m-%d')
-        datumi.append(formatiran_datum)
-        vrednosti.append(float(vrednost))  
+    query = """
+    WITH kumulativne_kolicine AS (
+        SELECT
+            p.id_uporabnika,
+            v.datum,
+            p.kratica,
+            SUM(p.kolicina) AS kolicina
+        FROM
+            portfeljske_transakcije p
+        JOIN
+            vrednosti_od_papirjev v ON v.oznaka = p.kratica
+        WHERE
+            p.id_uporabnika = %s
+            AND p.datum_transakcije <= v.datum
+        GROUP BY
+            p.id_uporabnika, v.datum, p.kratica
+    ),
+    vrednosti_portfelja AS (
+        SELECT
+            k.id_uporabnika,
+            k.datum,
+            SUM(k.kolicina * v.vrednost) AS skupna_vrednost
+        FROM
+            kumulativne_kolicine k
+        JOIN
+            vrednosti_od_papirjev v ON v.oznaka = k.kratica AND v.datum = k.datum
+        GROUP BY
+            k.id_uporabnika, k.datum
+    )
+    SELECT
+        datum,
+        ROUND(skupna_vrednost, 2) AS portfelj
+    FROM vrednosti_portfelja
+    ORDER BY datum;
+    """
 
+    try:
+        cursor.execute(query, (uporabnik,))
+        rezultati = cursor.fetchall()
+    except Exception as e:
+        print("Napaka pri pridobivanju dnevne vrednosti portfelja:", e)
+        rezultati = []
+
+    conn.close()
+
+    datumi = [r[0].strftime("%Y-%m-%d") for r in rezultati]
+    vrednosti = [float(r[1]) for r in rezultati]
     return datumi, vrednosti
 
+    
+def struktura_portfelja(uporabnik, danes=None):
+    """
+    Vrne seznam (ime papirja, vrednost_papirja) in skupno vsoto za posamezno delnico glede na trenutno stanje.
+    """
+    if danes is None:
+        danes = date.today()
+
+    conn = create_connection()
+    cursor = conn.cursor()
+
+    query = """
+    SELECT
+        p.kratica,
+        SUM(p.kolicina) AS skupna_kolicina,
+        v.vrednost,
+        SUM(p.kolicina) * v.vrednost AS vrednost_papirja
+    FROM portfeljske_transakcije p
+    JOIN (
+        SELECT DISTINCT ON (oznaka) oznaka, vrednost
+        FROM vrednosti_od_papirjev
+        WHERE datum <= %s
+        ORDER BY oznaka, datum DESC
+    ) v ON v.oznaka = p.kratica
+    WHERE p.id_uporabnika = %s
+    GROUP BY p.kratica, v.vrednost
+    HAVING SUM(p.kolicina) != 0
+    ORDER BY vrednost_papirja DESC;
+    """
+
+    cursor.execute(query, (danes, uporabnik))
+    podatki = cursor.fetchall()
+    conn.close()
+
+    podatki = [
+    (IMENA_PODJETIJ.get(row[0], row[0]), row[1], row[2], row[3])
+    for row in podatki
+]
+
+    # rezultat: [(KRKG, 10, 86.2, 862.0), ...]
+    return podatki
 
 
-def ustvari_obdobje(zacetek, konec, datumi, vrednosti):
-    ustrezni_datumi = []
-    ustrezne_vrednosti = []
-    
-    # Pretvori začetni in končni datum v datetime objekte
-    zacetek = datetime.strptime(zacetek, "%d.%m.%Y")  # Popravljeno na %Y
-    konec = datetime.strptime(konec, "%d.%m.%Y")  # Popravljeno na %Y
-    
-    # Pretvori vse datume v seznamu v datetime objekte
-    datumi_objekti = [datetime.strptime(datum, "%Y-%m-%d") for datum in datumi]  # Popravljeno na %Y
-    
-    # Preveri, če dolžina seznamov datumi in vrednosti ustreza
-    if len(datumi_objekti) != len(vrednosti):
-        raise ValueError("Seznami datumi in vrednosti morajo biti enake dolžine")
-    
-    # Filtriraj ustrezne datume in vrednosti
-    for datum, vrednost in zip(datumi_objekti, vrednosti):
-        if zacetek <= datum <= konec:
-            ustrezni_datumi.append(datum.strftime("%Y-%m-%d"))
-            ustrezne_vrednosti.append(vrednost)
-    
-    return ustrezni_datumi, ustrezne_vrednosti
-
-def doloci_frekvenco_podatkov(natancnost, datumi, vrednosti):
-    koncni_datumi = []
-    koncne_vrednosti = []
-    if natancnost == 'mesecno':
-        for i in range(len(datumi)):
-            if i % 22 == 0:
-                koncni_datumi.append(datumi[i])
-                koncne_vrednosti.append(vrednosti[i])
-        return koncni_datumi, koncne_vrednosti
-    elif natancnost == 'tedensko':
-        for i in range(len(datumi)):
-            if i % 5 == 0:
-                koncni_datumi.append(datumi[i])
-                koncne_vrednosti.append(vrednosti[i])
-        return koncni_datumi, koncne_vrednosti
-    else:
-        return datumi, vrednosti
 
 
 class vlagatelj:
@@ -252,8 +347,10 @@ class vlagatelj:
         if result:
             conn.close()
             return False  # User already exists
+        
+        hashed_password = bcrypt.hashpw(self.geslo.encode('utf-8'), bcrypt.gensalt())
 
-        cursor.execute("INSERT INTO uporabnik (ime, geslo) VALUES (%s, %s)", (self.ime, self.geslo))
+        cursor.execute("INSERT INTO uporabnik (ime, geslo) VALUES (%s, %s)", (self.ime, hashed_password.decode('utf-8')))
         conn.commit()
         conn.close()
         return True
@@ -264,16 +361,33 @@ class vlagatelj:
             return False
 
         cursor = conn.cursor()
-
         cursor.execute("SELECT geslo FROM uporabnik WHERE ime = %s", (self.ime,))
         result = cursor.fetchone()
-
         conn.close()
 
-        if result and result[0] == geslo:
-            return True
-        else:
-            return False
+        if result:
+            stored = result[0]
+
+            try:
+
+                if stored.startswith("$2b$") or stored.startswith("$2a$"):
+                    return bcrypt.checkpw(geslo.encode('utf-8'), stored.encode('utf-8'))
+                else:
+
+                    if stored == geslo:
+
+                        hashed = bcrypt.hashpw(geslo.encode('utf-8'), bcrypt.gensalt())
+                        conn = create_connection()
+                        cursor = conn.cursor()
+                        cursor.execute("UPDATE uporabnik SET geslo = %s WHERE ime = %s", (hashed.decode('utf-8'), self.ime))
+                        conn.commit()
+                        conn.close()
+                        return True
+            except Exception as e:
+                print("Napaka pri preverjanju gesla:", e)
+                return False
+
+        return False
 
     def dobi_podatke (self, datoteka):
         for i in range(len(datoteka)):
@@ -435,6 +549,8 @@ class vlagatelj:
         except ZeroDivisionError:
             return 0.0
         return donosnost
+    
+
     
 
 

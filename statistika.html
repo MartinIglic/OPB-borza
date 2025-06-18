@@ -2,6 +2,9 @@
    <head>
     <meta charset="utf-8">
     <title>Portfelj</title>
+    <!-- Flatpickr CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
     <style>
         body {
             font-family: Roboto, sans-serif;
@@ -75,10 +78,14 @@
          </form>
      </div>
     </header>
+
+    
+
+
     <h2>Tukaj lahko preučite gibanje cen posameznega vrednostnega papirja</h2>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
-<body>
+
 
 <form  method="post" action="/poizvedba">
         <table>
@@ -132,7 +139,7 @@
               <label>Obdobje (format d.m.l). OD:</label> 	
             </td>
             <td>
-              <input type="text" name="zacetek">
+              <input type="text" id="zacetek" name="zacetek" placeholder="dd.mm.llll">
             </td>
           
           
@@ -140,7 +147,7 @@
                <label> DO:</label> 	
             </td>
             <td>
-               <input type="text" name="konec">
+               <input type="text" id="konec" name="konec" placeholder="dd.mm.llll">
             </td>
           </tr>
            
@@ -155,11 +162,13 @@
 <canvas id="myChart" style="width:100%;max-width:600px"></canvas>
 
 <!-- Vstavi podatke iz Python predloge kot veljavne JS spremenljivke -->
+
+
 <script>
   const xValues = {{!podatki_cas}};
   const yValues = {{!podatki_vrednost}};
   const minimum = {{minimum}};
-  const maksimunm = {{maximum}};
+  const maksimum = {{maximum}};
 </script>
 
 <script>
@@ -175,17 +184,45 @@
         data: yValues
       }]
     },
-    options: {
+    options: {title: {
+      display: true,
+      text: "{{naslov_grafa}}",
+      fontSize: 16,
+      fontStyle: 'bold'
+    },
       legend: { display: false },
       scales: {
         yAxes: [{
           ticks: {
             min: minimum,
-            max: maksimunm
+            max: maksimum
           }
         }]
       }
     }
+  });
+
+  
+
+
+</script>
+
+
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<!-- Slovenian locale -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/sl.js"></script>
+
+<script>
+  flatpickr("#zacetek", {
+    dateFormat: "d.m.Y", // Oblika: dd.mm.llll
+    locale: "sl"
+  });
+
+  flatpickr("#konec", {
+    dateFormat: "d.m.Y",
+    locale: "sl"
   });
 </script>
 

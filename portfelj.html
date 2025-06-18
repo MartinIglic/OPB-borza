@@ -1,5 +1,7 @@
-
+%import json
+<!DOCTYPE html>
 <html lang="en">
+ 
    <head>
     <meta charset="utf-8">
     <title>Portfelj</title>
@@ -63,7 +65,11 @@
        background-color: red;
      }
     </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
+
    </head>
+   
    
 
    <body> 
@@ -79,8 +85,138 @@
         </div>
     </header>
     
-      <p style="color: red"><b>{{rezultat}}</b></p>
-      <h2>Vnos novega posla</h2>
+      
+    <h2>Pozdravljeni {{ime_uporabnika}}</h2>
+
+      <h3>Stanje portfelja</h3>
+
+      <canvas id="myChart" style="width:100%;max-width:600px"></canvas>
+
+<!-- Vstavi podatke iz Python predloge kot veljavne JS spremenljivke -->
+
+<script>
+  const xValues = {{!json.dumps(podatki_cas)}};
+  const yValues = {{!json.dumps(podatki_vrednost)}};
+  const minimum = {{minimum}};
+  const maksimum = {{maximum}};
+</script>
+
+<script>
+  new Chart("myChart", {
+    type: "line",
+    data: {
+      labels: xValues,
+      datasets: [{
+        fill: false,
+        lineTension: 0.3,
+        backgroundColor: "rgba(0,0,255,1.0)",
+        borderColor: "rgba(0,0,255,0.1)",
+        data: yValues
+      }]
+    },
+    options: {title: {
+      display: true,
+      text: "Vrednost mojega portfelja skozi čas",
+      fontSize: 16,
+      fontStyle: 'bold'
+    },
+      legend: { display: false },
+      scales: {
+        yAxes: [{
+          ticks: {
+            min: minimum,
+            max: maksimum
+          }
+        }]
+      }
+    }
+  });
+
+  
+
+
+</script>
+
+
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<!-- Slovenian locale -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/sl.js"></script>
+
+<script>
+  flatpickr("#zacetek", {
+    dateFormat: "d.m.Y", // Oblika: dd.mm.llll
+    locale: "sl"
+  });
+
+  flatpickr("#konec", {
+    dateFormat: "d.m.Y",
+    locale: "sl"
+  });
+</script>
+
+
+
+<h3>Struktura portfelja</h3>
+<canvas id="pieChart" style="width:100%;max-width:500px"></canvas>
+
+<script>
+  const pieLabels = {{!json.dumps(labels)}};
+  const pieValues = {{!json.dumps(vrednosti_tortni)}};
+  const pieColors = {{!json.dumps(barve)}};
+  const pieOznake = {{!json.dumps(oznake)}};
+
+  new Chart("pieChart", {
+    type: "doughnut",
+    data: {
+      labels: pieOznake,  // prikaz oznake = ime + %
+      datasets: [{
+        backgroundColor: pieColors,
+        data: pieValues
+      }]
+    },
+    options: {
+      title: {
+        display: true,
+        text: "Delež posameznih papirjev v portfelju"
+      },
+      legend: {
+        display: true,
+        position: 'bottom',
+        labels: {
+          generateLabels: function(chart) {
+            const data = chart.data;
+            return pieLabels.map(function(label, i) {
+              return {
+                text: label,
+                fillStyle: data.datasets[0].backgroundColor[i],
+                hidden: false,
+                index: i
+              };
+            });
+          }
+        }
+      },
+      tooltips: {
+        callbacks: {
+          label: function(tooltipItem, data) {
+            const value = data.datasets[0].data[tooltipItem.index];
+            const label = data.labels[tooltipItem.index];
+            return label + ": " + value.toFixed(2) + " EUR";
+          }
+        }
+      }
+    }
+  });
+</script>
+
+
+
+  <h2>Vnesite nov posel</h2>
+
+  <p style="color: red"><b>{{rezultat}}</b></p>
+
       <form  method="post" action="/vnos">
         <table>
           <tr>
@@ -154,8 +290,7 @@
       </form>
 
 
-      <h1>Pozdravljeni {{ime_uporabnika}}</h1>
-      <h2>Moj portfelj</h2>
+      <h2>Moj portfelj-hitri podatki</h2>
       <table>
          <tr>
             <td colspan=2 align=center><b>Vrednost mojega portfelja</b></td>
@@ -224,5 +359,7 @@
             </td>
          </tr>
       </table>
+
+
    </body>
 </html>
