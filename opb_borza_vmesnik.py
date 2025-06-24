@@ -246,9 +246,6 @@ def statistika():
     zacetek = request.forms.get('zacetek')
     konec = request.forms.get('konec')
     
-    #datumi, vrednosti = pretvori_rezultat_v_seznama(dodaj_vrednosti(simbol))
-    #casi, cene = ustvari_obdobje(zacetek, konec, datumi, vrednosti)
-    #podatki_datumi, podatki_cene = doloci_frekvenco_podatkov(natancnost, casi, cene)
     ime_podjetja = IMENA_PODJETIJ.get(simbol, simbol)
     naslov_grafa = f" Cena podjeta {ime_podjetja} v obdobju {zacetek} - {konec}, {natancnost}"
     podatki_datumi, podatki_cene = opb_borza_model.poizvej_podatke(simbol, natancnost, zacetek, konec)
